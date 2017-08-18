@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eclipse/paho.mqtt.golang/packets"
+	"github.com/maruel/paho.mqtt.golang/packets"
 )
 
 func keepalive(c *client) {

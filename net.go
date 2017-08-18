@@ -17,16 +17,12 @@ package mqtt
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"reflect"
 	"time"
 
-	"github.com/eclipse/paho.mqtt.golang/packets"
-	"golang.org/x/net/proxy"
-	"golang.org/x/net/websocket"
+	"github.com/maruel/paho.mqtt.golang/packets"
 )
 
 func signalError(c chan<- error, err error) {
@@ -38,70 +34,79 @@ func signalError(c chan<- error, err error) {
 
 func openConnection(uri *url.URL, tlsc *tls.Config, timeout time.Duration) (net.Conn, error) {
 	switch uri.Scheme {
-	case "ws":
-		conn, err := websocket.Dial(uri.String(), "mqtt", fmt.Sprintf("http://%s", uri.Host))
-		if err != nil {
-			return nil, err
-		}
-		conn.PayloadType = websocket.BinaryFrame
-		return conn, err
-	case "wss":
-		config, _ := websocket.NewConfig(uri.String(), fmt.Sprintf("https://%s", uri.Host))
-		config.Protocol = []string{"mqtt"}
-		config.TlsConfig = tlsc
-		conn, err := websocket.DialConfig(config)
-		if err != nil {
-			return nil, err
-		}
-		conn.PayloadType = websocket.BinaryFrame
-		return conn, err
+	/*
+		case "ws":
+			conn, err := websocket.Dial(uri.String(), "mqtt", fmt.Sprintf("http://%s", uri.Host))
+			if err != nil {
+				return nil, err
+			}
+			conn.PayloadType = websocket.BinaryFrame
+			return conn, err
+		case "wss":
+			config, _ := websocket.NewConfig(uri.String(), fmt.Sprintf("https://%s", uri.Host))
+			config.Protocol = []string{"mqtt"}
+			config.TlsConfig = tlsc
+			conn, err := websocket.DialConfig(config)
+			if err != nil {
+				return nil, err
+			}
+			conn.PayloadType = websocket.BinaryFrame
+			return conn, err
+	*/
 	case "tcp":
-		allProxy := os.Getenv("all_proxy")
-		if len(allProxy) == 0 {
-			conn, err := net.DialTimeout("tcp", uri.Host, timeout)
-			if err != nil {
-				return nil, err
-			}
-			return conn, nil
-		} else {
-			proxyDialer := proxy.FromEnvironment()
-
-			conn, err := proxyDialer.Dial("tcp", uri.Host)
-			if err != nil {
-				return nil, err
-			}
-			return conn, nil
+		/*
+			allProxy := os.Getenv("all_proxy")
+			if len(allProxy) == 0 {
+		*/
+		conn, err := net.DialTimeout("tcp", uri.Host, timeout)
+		if err != nil {
+			return nil, err
 		}
+		return conn, nil
+		/*
+			} else {
+				proxyDialer := proxy.FromEnvironment()
+
+				conn, err := proxyDialer.Dial("tcp", uri.Host)
+				if err != nil {
+					return nil, err
+				}
+				return conn, nil
+			}
+		*/
 	case "ssl":
 		fallthrough
 	case "tls":
 		fallthrough
 	case "tcps":
-		allProxy := os.Getenv("all_proxy")
-		if len(allProxy) == 0 {
-			conn, err := tls.DialWithDialer(&net.Dialer{Timeout: timeout}, "tcp", uri.Host, tlsc)
-			if err != nil {
-				return nil, err
-			}
-			return conn, nil
-		} else {
-			proxyDialer := proxy.FromEnvironment()
-
-			conn, err := proxyDialer.Dial("tcp", uri.Host)
-			if err != nil {
-				return nil, err
-			}
-
-			tlsConn := tls.Client(conn, tlsc)
-
-			err = tlsConn.Handshake()
-			if err != nil {
-				conn.Close()
-				return nil, err
-			}
-
-			return tlsConn, nil
+		/*
+			allProxy := os.Getenv("all_proxy")
+			if len(allProxy) == 0 {
+		*/
+		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: timeout}, "tcp", uri.Host, tlsc)
+		if err != nil {
+			return nil, err
 		}
+		return conn, nil
+		/*
+			} else {
+				proxyDialer := proxy.FromEnvironment()
+
+				conn, err := proxyDialer.Dial("tcp", uri.Host)
+				if err != nil {
+					return nil, err
+				}
+
+				tlsConn := tls.Client(conn, tlsc)
+
+				err = tlsConn.Handshake()
+				if err != nil {
+					conn.Close()
+					return nil, err
+				}
+				return tlsConn, nil
+			}
+		*/
 	}
 	return nil, errors.New("Unknown protocol")
 }
